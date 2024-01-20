@@ -11,10 +11,11 @@ readTemplateFile.on('data', (chunk) => {
   textTemplate += chunk;
 });
 readTemplateFile.on('end', () => {
-  console.log(textTemplate);
   replaceContentInTemplate('header');
   replaceContentInTemplate('articles');
   replaceContentInTemplate('footer');
+
+  //create folder
 });
 
 //replace
@@ -31,8 +32,20 @@ function replaceContentInTemplate(tagName) {
     let regex = new RegExp(`{{${tagName}}}`, 'g');
     textTemplate = textTemplate.replace(regex, textTag);
 
-    console.log('new html', textTemplate);
+    console.log('Это финальный файл: ', textTemplate);
+
+    const newPath = path.join(__dirname, 'project-dist');
+
+    fs.mkdir(newPath, { recursive: true }, (error) => {
+      if (error) {
+        console.log('Error create folder', error);
+        return;
+      }
+    });
+
+    const newHTMLPath = path.join(newPath, 'index.html');
+
+    const newHTML = fs.createWriteStream(newHTMLPath);
+    newHTML.write(textTemplate);
   });
 }
-
-
