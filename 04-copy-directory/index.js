@@ -6,6 +6,7 @@ let folderCopyPath = path.join(__dirname, 'files-copy');
 
 //create folder
 createFolder(folderCopyPath);
+copyFolderContent(folderPath, folderCopyPath);
 
 function createFolder(pathCopy, addPath = '') {
   fs.mkdir(`${pathCopy}${addPath}`, { recursive: true }, (error) => {
@@ -16,54 +17,55 @@ function createFolder(pathCopy, addPath = '') {
   });
 }
 
-// foldres content
+function copyFolderContent(pathFromCopy, pathToCopy) {
+  // foldres content
+  fs.readdir(pathFromCopy, { withFileTypes: true }, (error, folderContents) => {
+    if (error) {
+      console.log('Error folder content', error);
+      return;
+    }
+    console.log('folders file: ', folderContents);
 
-fs.readdir(folderPath, { withFileTypes: true }, (error, folderContents) => {
-  if (error) {
-    console.log('Error folder content', error);
-    return;
-  }
-  console.log('folders file: ', folderContents);
-
-  // copy-foldres content
-  fs.readdir(
-    folderCopyPath,
-    { withFileTypes: true },
-    (error, folderCopyContents) => {
-      if (error) {
-        console.log('Error COPY folder content', error);
-        return;
-      }
-      console.log('COPY-folders file: ', folderCopyContents);
-
-      //delete file in copy-folder
-      folderCopyContents.forEach((copyContent) => {
-        if (
-          !folderContents.some((content) => content.name === copyContent.name)
-        ) {
-          const fullCopyPath = path.join(folderCopyPath, copyContent.name);
-          fs.unlink(fullCopyPath, (err) => {
-            if (err) {
-              console.log('Error delete file: ', err);
-            }
-            console.log('Delete file: ', copyContent.name);
-          });
+    // where to copy
+    fs.readdir(
+      pathToCopy,
+      { withFileTypes: true },
+      (error, folderCopyContents) => {
+        if (error) {
+          console.log('Error COPY folder content', error);
+          return;
         }
+        console.log('COPY-folders file: ', folderCopyContents);
+
+        //delete file in copy-folder
+        folderCopyContents.forEach((copyContent) => {
+          if (
+            !folderContents.some((content) => content.name === copyContent.name)
+          ) {
+            const fullCopyPath = path.join(pathToCopy, copyContent.name);
+            fs.unlink(fullCopyPath, (err) => {
+              if (err) {
+                console.log('Error delete file: ', err);
+              }
+              console.log('Delete file: ', copyContent.name);
+            });
+          }
+        });
+      },
+    );
+
+    //copy and update file
+    folderContents.forEach((content) => {
+      const sourceFile = path.join(pathFromCopy, content.name);
+      const copyFile = path.join(pathToCopy, content.name);
+
+      fs.copyFile(sourceFile, copyFile, (err) => {
+        if (err) {
+          console.error('Error in copy process:', err);
+          return;
+        }
+        console.log('Copy sucsess!');
       });
-    },
-  );
-
-  //copy and update file
-  folderContents.forEach((content) => {
-    const sourceFile = path.join(folderPath, content.name);
-    const copyFile = path.join(folderCopyPath, content.name);
-
-    fs.copyFile(sourceFile, copyFile, (err) => {
-      if (err) {
-        console.error('Error in copy process:', err);
-        return;
-      }
-      console.log('Copy sucsess!');
     });
   });
-});
+}
