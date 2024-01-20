@@ -5,12 +5,16 @@ let folderPath = path.join(__dirname, 'files');
 let folderCopyPath = path.join(__dirname, 'files-copy');
 
 //create folder
-fs.mkdir(folderCopyPath, { recursive: true }, (error) => {
-  if (error) {
-    console.log('Error create folder', error);
-    return;
-  }
-});
+createFolder(folderCopyPath);
+
+function createFolder(pathCopy, addPath = '') {
+  fs.mkdir(`${pathCopy}${addPath}`, { recursive: true }, (error) => {
+    if (error) {
+      console.log('Error create folder', error);
+      return;
+    }
+  });
+}
 
 // foldres content
 
