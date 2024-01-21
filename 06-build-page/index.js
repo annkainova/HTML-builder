@@ -2,77 +2,95 @@ const fs = require('fs');
 const path = require('path');
 
 let templatePath = path.join(__dirname, 'template.html');
-let textTemplate = '';
+const newPath = path.join(__dirname, 'project-dist');
+const componentsPath = path.join(__dirname, 'components');
 
-let readTemplateFile = fs.createReadStream(templatePath, 'utf-8');
-
-//read template
-readTemplateFile.on('data', (chunk) => {
-  textTemplate += chunk;
-});
-readTemplateFile.on('end', () => {
-  replaceContentInTemplate('header');
-  replaceContentInTemplate('articles');
-  replaceContentInTemplate('footer');
-
-  //create folder
-});
-
-//replace
-function replaceContentInTemplate(tagName) {
-  const tagPath = path.join(__dirname, `components/${tagName}.html`);
-  let textTag = '';
-
-  let readTagNameFile = fs.createReadStream(tagPath, 'utf-8');
-  //read tag name
-  readTagNameFile.on('data', (chunk) => {
-    textTag += chunk;
-  });
-  readTagNameFile.on('end', () => {
-    let regex = new RegExp(`{{${tagName}}}`, 'g');
-    textTemplate = textTemplate.replace(regex, textTag);
-
-    console.log('Это финальный файл: ', textTemplate);
-
-    const newPath = path.join(__dirname, 'project-dist');
-
-    fs.mkdir(newPath, { recursive: true }, (error) => {
-      if (error) {
-        console.log('Error create folder', error);
-        return;
-      }
-    });
-
-    const newHTMLPath = path.join(newPath, 'index.html');
-
-    const newHTML = fs.createWriteStream(newHTMLPath);
-    newHTML.write(textTemplate);
-  });
+async function createFolder(pathFromCopy, addPath = '') {
+  const fullPath = path.join(pathFromCopy, addPath);
+  try {
+    await fs.promises.mkdir(fullPath, { recursive: true });
+  } catch (error) {
+    console.log('Error create folder', error);
+  }
 }
 
-//02 merge style
+async function detectNameFile(pathFolder) {
+  try {
+    const folderContents = await fs.promises.readdir(pathFolder, {
+      withFileTypes: true,
+    });
+    return folderContents
+      .filter(
+        (content) => content.isFile() && path.extname(content.name) === '.html',
+      )
+      .map((content) => content.name.slice(0, -5));
+  } catch (error) {
+    console.log('Error folder content', error);
+    return [];
+  }
+}
+
+async function replaceContentInTemplate(tagName, textHTML) {
+  const tagPath = path.join(__dirname, `components/${tagName}.html`);
+  try {
+    const textTag = await fs.promises.readFile(tagPath, 'utf-8');
+
+    let regex = new RegExp(`{{${tagName}}}`, 'g');
+    return textHTML.replace(regex, textTag);
+  } catch (error) {
+    console.log(`Error reading file: ${tagName}`, error);
+    return textHTML;
+  }
+}
+
+//read template
+async function htmlBuilder(pathFromCopy) {
+  try {
+    let textHTML = await fs.promises.readFile(pathFromCopy, 'utf-8');
+    const fileNames = await detectNameFile(componentsPath);
+    for (const fileName of fileNames) {
+      textHTML = await replaceContentInTemplate(fileName, textHTML);
+    }
+
+    const newHTMLPath = path.join(newPath, 'index.html');
+    await fs.promises.writeFile(newHTMLPath, textHTML);
+  } catch (error) {
+    console.log('Error building HTML: ', error);
+  }
+}
+
+async function run() {
+  await createFolder(newPath);
+  await htmlBuilder(templatePath);
+}
+
+run();
+
+// 02 merge style
 
 let pathFolderCSS = path.join(__dirname, 'styles');
-
-let projectPath = path.join(__dirname, 'project-dist/style.css');
-const styleFile = fs.createWriteStream(projectPath);
+let projectPathCSS = path.join(__dirname, 'project-dist/style.css');
 
 //content folder Styles
-fs.readdir(pathFolderCSS, { withFileTypes: true }, (error, folderContents) => {
-  if (error) {
+
+detectContentFile(pathFolderCSS);
+const styleFile = fs.createWriteStream(projectPathCSS);
+
+async function detectContentFile(pathMergeFrom) {
+  try {
+    const folderContent = fs.readdir(pathMergeFrom, { withFileTypes: true });
+    // detect file
+    let cssFiles = folderContents
+      .filter(
+        (content) => content.isFile() && path.extname(content.name) === '.css',
+      )
+      .map((content) => path.join(pathMergeFrom, content.name));
+
+    readAndCombineCss(cssFiles);
+  } catch (error) {
     console.log('Error folder content', error);
-    return;
   }
-
-  // detect file
-  let cssFiles = folderContents
-    .filter(
-      (content) => content.isFile() && path.extname(content.name) === '.css',
-    )
-    .map((content) => path.join(pathFolderCSS, content.name));
-
-  readAndCombineCss(cssFiles);
-});
+}
 
 //read and merge
 function readAndCombineCss(files) {
@@ -85,40 +103,30 @@ function readAndCombineCss(files) {
       styleFile.end();
     });
   });
+
+  styleFile.on('finish', () => {
+    console.log('Merge sucsess!');
+  });
+  styleFile.on('error', (error) => {
+    console.error(`Error in merge:' ${error.message}`);
+  });
 }
 
-styleFile.on('finish', () => {
-  console.log('Merge sucsess!');
-});
-
-styleFile.on('error', (error) => {
-  console.error(`Error in merge:' ${error.message}`);
-});
-
-03 copy assets file
+// 03 copy assets file
 
 let folderPath = path.join(__dirname, 'assets');
 let folderCopyPath = path.join(__dirname, 'project-dist/assets');
 
-createFolder(folderCopyPath);
-createFolder(folderCopyPath, '/fonts');
-createFolder(folderCopyPath, '/img');
-createFolder(folderCopyPath, '/svg');
-
-function createFolder(pathFromCopy, addPath = '') {
-  fs.mkdir(`${pathFromCopy}${addPath}`, { recursive: true }, (error) => {
-    if (error) {
-      console.log('Error create folder', error);
-      return;
-    }
-  });
+async function setupFolders() {
+  await createFolder(folderCopyPath);
+  await createFolder(folderCopyPath, '/fonts');
+  await createFolder(folderCopyPath, '/img');
+  await createFolder(folderCopyPath, '/svg');
 }
 
-copyFolderContent(folderPath, folderCopyPath, '/fonts');
-copyFolderContent(folderPath, folderCopyPath, '/img');
-copyFolderContent(folderPath, folderCopyPath, '/svg');
+setupFolders();
 
-function copyFolderContent(pathFromCopy, pathToCopy, addPath = '') {
+async function copyFolderContent(pathFromCopy, pathToCopy, addPath = '') {
   // foldres content
   fs.readdir(
     `${pathFromCopy}${addPath}`,
@@ -128,7 +136,6 @@ function copyFolderContent(pathFromCopy, pathToCopy, addPath = '') {
         console.log('Error folder content', error);
         return;
       }
-      console.log('folders file: ', folderContents);
 
       // where to copy
       fs.readdir(
@@ -139,7 +146,6 @@ function copyFolderContent(pathFromCopy, pathToCopy, addPath = '') {
             console.log('Error COPY folder content', error);
             return;
           }
-          console.log('COPY-folders file: ', folderCopyContents);
 
           //delete file in copy-folder
           folderCopyContents.forEach((copyContent) => {
@@ -173,9 +179,19 @@ function copyFolderContent(pathFromCopy, pathToCopy, addPath = '') {
             console.error('Error in copy process:', err);
             return;
           }
-          console.log('Copy sucsess!');
         });
       });
+      console.log('Copy sucsess!');
     },
   );
 }
+
+async function copyFolders() {
+  await setupFolders();
+
+  await copyFolderContent(folderPath, folderCopyPath, '/fonts');
+  await copyFolderContent(folderPath, folderCopyPath, '/img');
+  await copyFolderContent(folderPath, folderCopyPath, '/svg');
+}
+
+copyFolders();
