@@ -1,13 +1,9 @@
 const fs = require('fs');
 const path = require('path');
-const { compile } = require('pug');
 
 let pathFolderCSS = path.join(__dirname, 'styles');
-console.log(pathFolderCSS);
-// const fullPath = path.join(pathFolderCSS, 'lala.css');
-// console.log(fullPath);
-
 let projectPath = path.join(__dirname, 'project-dist/bundle.css');
+
 const bundelFile = fs.createWriteStream(projectPath);
 
 //content folder Styles
@@ -32,7 +28,7 @@ function readAndCombineCss(files) {
   files.forEach((file) => {
     let readFile = fs.createReadStream(file, 'utf-8');
     readFile.on('data', (chunk) => {
-      bundelFile.write(chunk);
+      bundelFile.write(chunk + '\n');
     });
     readFile.on('end', () => {
       bundelFile.end();
