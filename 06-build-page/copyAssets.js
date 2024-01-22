@@ -18,14 +18,20 @@ setupFolders();
 async function copyFolderContent(pathFromCopy, pathToCopy, addPath = '') {
   try {
     // foldres contentе
-    const folderContents = await fs.readdir(`${pathFromCopy}${addPath}`, {
-      withFileTypes: true,
-    });
+    const folderContents = await fs.promises.readdir(
+      `${pathFromCopy}${addPath}`,
+      {
+        withFileTypes: true,
+      },
+    );
 
     // where to copy
-    const folderCopyContents = fs.readdir(`${pathToCopy}${addPath}`, {
-      withFileTypes: true,
-    });
+    const folderCopyContents = await fs.promises.readdir(
+      `${pathToCopy}${addPath}`,
+      {
+        withFileTypes: true,
+      },
+    );
 
     //delete file in copy-folder
     for (let copyContent of folderCopyContents) {
@@ -36,7 +42,7 @@ async function copyFolderContent(pathFromCopy, pathToCopy, addPath = '') {
           `${pathToCopy}${addPath}`,
           copyContent.name,
         );
-        await fs.unlink(fullCopyPath);
+        await fs.promises.unlink(fullCopyPath);
         console.log('Delete file: ', copyContent.name);
       }
     }
@@ -45,7 +51,7 @@ async function copyFolderContent(pathFromCopy, pathToCopy, addPath = '') {
       const sourceFile = path.join(`${pathFromCopy}${addPath}`, content.name);
       const copyFile = path.join(`${pathToCopy}${addPath}`, content.name);
 
-      await fs.copyFile(sourceFile, copyFile);
+      await fs.promises.copyFile(sourceFile, copyFile);
       console.log('Copied file:', content.name);
     }
   } catch (error) {
