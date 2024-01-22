@@ -8,7 +8,6 @@ fs.readdir(filePath, { withFileTypes: true }, (error, dirContents) => {
     console.log('Error', error);
     return;
   }
-  //all contents
 
   // files detect
   const filesContent = dirContents.filter((content) => content.isFile());
@@ -25,7 +24,8 @@ fs.readdir(filePath, { withFileTypes: true }, (error, dirContents) => {
         return;
       } else {
         const fileSize = stats.size / 1000;
-        console.log(`${file.name} - ${fileExt} - ${fileSize}kb`);
+        const fileNameWithotEx = file.name.split('.').slice(0, -1).join('.');
+        console.log(`${fileNameWithotEx} - ${fileExt} - ${fileSize}kb`);
       }
     });
   });
