@@ -25,10 +25,8 @@ function copyFolderContent(pathFromCopy, pathToCopy, addPath = '') {
     { withFileTypes: true },
     (error, folderContents) => {
       if (error) {
-        console.log('Error folder content', error);
         return;
       }
-      console.log('folders file: ', folderContents);
 
       // where to copy
       fs.readdir(
@@ -36,10 +34,8 @@ function copyFolderContent(pathFromCopy, pathToCopy, addPath = '') {
         { withFileTypes: true },
         (error, folderCopyContents) => {
           if (error) {
-            console.log('Error COPY folder content', error);
             return;
           }
-          console.log('COPY-folders file: ', folderCopyContents);
 
           //delete file in copy-folder
           folderCopyContents.forEach((copyContent) => {
@@ -73,7 +69,7 @@ function copyFolderContent(pathFromCopy, pathToCopy, addPath = '') {
             console.error('Error in copy process:', err);
             return;
           }
-          console.log('Copy sucsess!');
+          console.log('Copy sucsess!', content.name);
         });
       });
     },
