@@ -1,3 +1,4 @@
+const { error } = require('console');
 const fs = require('fs');
 const path = require('path');
 
@@ -59,58 +60,61 @@ async function htmlBuilder(pathFromCopy) {
   }
 }
 
-async function run() {
+async function createHTML() {
   await createFolder(newPath);
   await htmlBuilder(templatePath);
 }
 
-run();
+createHTML();
 
 // 02 merge style
 
 let pathFolderCSS = path.join(__dirname, 'styles');
 let projectPathCSS = path.join(__dirname, 'project-dist/style.css');
-
-//content folder Styles
-
-detectContentFile(pathFolderCSS);
 const styleFile = fs.createWriteStream(projectPathCSS);
 
+//content folder Styles
 async function detectContentFile(pathMergeFrom) {
   try {
-    const folderContent = fs.readdir(pathMergeFrom, { withFileTypes: true });
-    // detect file
+    const folderContents = await fs.promises.readdir(pathMergeFrom, {
+      withFileTypes: true,
+    });
     let cssFiles = folderContents
       .filter(
         (content) => content.isFile() && path.extname(content.name) === '.css',
       )
       .map((content) => path.join(pathMergeFrom, content.name));
 
-    readAndCombineCss(cssFiles);
+    await readAndCombineCss(cssFiles);
   } catch (error) {
-    console.log('Error folder content', error);
+    console.log('Error folder content:', error);
   }
 }
 
 //read and merge
-function readAndCombineCss(files) {
-  files.forEach((file) => {
-    let readFile = fs.createReadStream(file, 'utf-8');
-    readFile.on('data', (chunk) => {
-      styleFile.write(chunk);
-    });
-    readFile.on('end', () => {
-      styleFile.end();
-    });
-  });
-
-  styleFile.on('finish', () => {
-    console.log('Merge sucsess!');
-  });
-  styleFile.on('error', (error) => {
-    console.error(`Error in merge:' ${error.message}`);
-  });
+async function readAndCombineCss(files) {
+  try {
+    for (const file of files) {
+      let readFile = await fs.createReadStream(file, 'utf-8');
+      readFile.on('data', (chunk) => styleFile.write(chunk));
+      readFile.on('end', () => {
+        styleFile.end();
+      });
+    }
+  } catch (error) {
+    console.log(`Error with reading ${file}:`, error);
+  }
 }
+styleFile.end();
+
+styleFile.on('finish', () => {
+  console.log('Merge sucsess!');
+});
+styleFile.on('error', (error) => {
+  console.error(`Error in merge:' ${error.message}`);
+});
+
+detectContentFile(pathFolderCSS);
 
 // 03 copy assets file
 
