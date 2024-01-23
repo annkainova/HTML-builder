@@ -5,14 +5,23 @@ const path = require('path');
 let filePath = path.join(__dirname, 'text.txt');
 const newFile = fs.createWriteStream(filePath);
 
-let rl = readline.createInterface(process.stdin, process.stdout);
-rl.setPrompt('Write some text: \n');
-rl.prompt();
-rl.on('line', (text) => {
+let writeProcess = readline.createInterface(process.stdin, process.stdout);
+
+function exitProgram() {
+  console.log('Goodbye!');
+  writeProcess.close();
+}
+
+writeProcess.setPrompt('Write some text: \n');
+writeProcess.prompt();
+
+writeProcess.on('line', (text) => {
   if (text.toLowerCase() === 'exit') {
-    console.log('Goodbye!');
-    rl.close();
+    writeProcess.close();
   } else {
     newFile.write(`${text}\n`);
   }
 });
+
+writeProcess.on('close', exitProgram);
+process.on('SIGINT', exitProgram);
